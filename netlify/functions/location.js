@@ -1,33 +1,23 @@
-const { getStore } = require("@netlify/blobs");
+const {
+  connectLambda,
+  getStore
+} = require("@netlify/blobs");
 
 exports.handler = async (event) => {
   try {
+    // Initialize Netlify Blobs for the Lambda-compatible
+    // Netlify Functions v1 environment.
+    connectLambda(event);
+
     const adminToken = process.env.ADMIN_TOKEN;
-    const blobsToken = process.env.NETLIFY_BLOBS_TOKEN;
 
-    if (!blobsToken) {
-      console.error("NETLIFY_BLOBS_TOKEN is missing");
-      return {
-        statusCode: 500,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          error: "Netlify Blobs token is not configured"
-        })
-      };
-    }
+    // IMPORTANT:
+    // This must happen INSIDE the handler, after connectLambda(event).
+    const store = getStore("consented-locations");
 
-    const store = getStore("consented-locations", {
-      siteID:
-        process.env.SITE_ID ||
-        "63f25b97-e6c5-46bf-8b35-5c8346c7cfcd",
-      token: blobsToken
-    });
-
-    // -------------------------
+    // --------------------------------
     // SAVE LOCATION
-    // -------------------------
+    // --------------------------------
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
 
@@ -81,9 +71,9 @@ exports.handler = async (event) => {
       };
     }
 
-    // -------------------------
+    // --------------------------------
     // READ LOCATIONS
-    // -------------------------
+    // --------------------------------
     if (event.httpMethod === "GET") {
       if (
         !adminToken ||
@@ -130,6 +120,9 @@ exports.handler = async (event) => {
       };
     }
 
+    // --------------------------------
+    // OTHER METHODS
+    // --------------------------------
     return {
       statusCode: 405,
       headers: {
@@ -139,6 +132,7 @@ exports.handler = async (event) => {
         error: "Method not allowed"
       })
     };
+
   } catch (error) {
     console.error("Location function error:", error);
 
