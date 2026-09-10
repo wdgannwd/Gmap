@@ -3,14 +3,31 @@ const { getStore } = require("@netlify/blobs");
 exports.handler = async (event) => {
   try {
     const adminToken = process.env.ADMIN_TOKEN;
+    const blobsToken = process.env.NETLIFY_BLOBS_TOKEN;
 
-    // Use the older syntax compatible with the installed
-    // @netlify/blobs version.
-    const store = getStore("consented-locations");
+    if (!blobsToken) {
+      console.error("NETLIFY_BLOBS_TOKEN is missing");
+      return {
+        statusCode: 500,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          error: "Netlify Blobs token is not configured"
+        })
+      };
+    }
 
-    // -----------------------------
-    // RECEIVE A CONSENTED LOCATION
-    // -----------------------------
+    const store = getStore("consented-locations", {
+      siteID:
+        process.env.SITE_ID ||
+        "63f25b97-e6c5-46bf-8b35-5c8346c7cfcd",
+      token: blobsToken
+    });
+
+    // -------------------------
+    // SAVE LOCATION
+    // -------------------------
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
 
@@ -64,11 +81,10 @@ exports.handler = async (event) => {
       };
     }
 
-    // -----------------------------
-    // PRIVATE ADMIN DASHBOARD
-    // -----------------------------
+    // -------------------------
+    // READ LOCATIONS
+    // -------------------------
     if (event.httpMethod === "GET") {
-
       if (
         !adminToken ||
         event.queryStringParameters?.token !== adminToken
@@ -123,9 +139,7 @@ exports.handler = async (event) => {
         error: "Method not allowed"
       })
     };
-
   } catch (error) {
-
     console.error("Location function error:", error);
 
     return {
