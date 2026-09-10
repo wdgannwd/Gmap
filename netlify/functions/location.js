@@ -5,19 +5,17 @@ const {
 
 exports.handler = async (event) => {
   try {
-    // Initialize Netlify Blobs for the Lambda-compatible
-    // Netlify Functions v1 environment.
+    // Initialize Netlify Blobs for Lambda-compatible Functions
     connectLambda(event);
 
     const adminToken = process.env.ADMIN_TOKEN;
 
-    // IMPORTANT:
-    // This must happen INSIDE the handler, after connectLambda(event).
+    // Open the site-wide Netlify Blobs store
     const store = getStore("consented-locations");
 
-    // --------------------------------
-    // SAVE LOCATION
-    // --------------------------------
+    // ==========================================
+    // POST — SAVE A CONSENTED LOCATION
+    // ==========================================
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
 
@@ -25,6 +23,7 @@ exports.handler = async (event) => {
       const lon = Number(body.lon);
       const accuracy = Number(body.accuracy);
 
+      // Validate location data
       if (
         !Number.isFinite(lat) ||
         !Number.isFinite(lon) ||
@@ -46,19 +45,24 @@ exports.handler = async (event) => {
         };
       }
 
+      // Location record
       const item = {
-        lat,
-        lon,
-        accuracy,
+        lat: lat,
+        lon: lon,
+        accuracy: accuracy,
         timestamp: new Date().toISOString()
       };
 
+      // Create a unique key
       const key =
         Date.now().toString() +
         "-" +
         Math.random().toString(36).slice(2);
 
+      // Save to Netlify Blobs
       await store.setJSON(key, item);
+
+      console.log("Location saved successfully:", key);
 
       return {
         statusCode: 201,
@@ -71,10 +75,12 @@ exports.handler = async (event) => {
       };
     }
 
-    // --------------------------------
-    // READ LOCATIONS
-    // --------------------------------
+    // ==========================================
+    // GET — READ LOCATIONS FOR ADMIN
+    // ==========================================
     if (event.httpMethod === "GET") {
+
+      // Check admin token
       if (
         !adminToken ||
         event.queryStringParameters?.token !== adminToken
@@ -90,14 +96,19 @@ exports.handler = async (event) => {
         };
       }
 
+      // List all stored location records
       const result = await store.list();
 
       const locations = [];
 
       for (const blob of result.blobs || []) {
+
+        // IMPORTANT:
+        // Do NOT use consistency: "strong" here.
+        // Strong consistency requires additional
+        // Netlify Blobs edge configuration.
         const item = await store.get(blob.key, {
-          type: "json",
-          consistency: "strong"
+          type: "json"
         });
 
         if (item) {
@@ -105,10 +116,15 @@ exports.handler = async (event) => {
         }
       }
 
+      // Newest first
       locations.sort(
         (a, b) =>
           new Date(b.timestamp) -
           new Date(a.timestamp)
+      );
+
+      console.log(
+        `Returning ${locations.length} location record(s)`
       );
 
       return {
@@ -120,9 +136,9 @@ exports.handler = async (event) => {
       };
     }
 
-    // --------------------------------
-    // OTHER METHODS
-    // --------------------------------
+    // ==========================================
+    // OTHER HTTP METHODS
+    // ==========================================
     return {
       statusCode: 405,
       headers: {
@@ -134,7 +150,11 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error("Location function error:", error);
+
+    console.error(
+      "Location function error:",
+      error
+    );
 
     return {
       statusCode: 500,
